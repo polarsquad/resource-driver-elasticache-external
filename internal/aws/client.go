@@ -11,8 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/elasticache"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/elasticache"	
 )
 
 type Client interface {
@@ -83,7 +83,7 @@ func (c awsClient) DeleteBucket(bucketName string) error {
 	return nil
 }
 
-func (c awsClient) CreateElastiCacheRedis(clusterId string, cacheNodeType string, cacheAz string) (string, error) {
+func (c awsClient) CreateElastiCacheRedis(clusterId string, cacheNodeType string, cacheAz string) error {
 	input := &elasticache.CreateCacheClusterInput{
 		AutoMinorVersionUpgrade:   aws.Bool(true),
 		CacheClusterId:            aws.String(clusterId),
@@ -98,60 +98,60 @@ func (c awsClient) CreateElastiCacheRedis(clusterId string, cacheNodeType string
 	}
 
 	svc := elasticache.New(c.sess)
-	result, err := svc.CreateCacheCluster(input)
+	_, err := svc.CreateCacheCluster(input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case elasticache.ErrCodeReplicationGroupNotFoundFault:
-				log.Prinf(`Replication group not found`)
-				return "", fmt.Errorf(`Replication group not found`)
+				log.Printf(`Replication group not found`)
+				return fmt.Errorf(`Replication group not found`)
 			case elasticache.ErrCodeInvalidReplicationGroupStateFault:
 				log.Printf(`Invalid replication group state`)
-				return "", fmt.Errorf(`Invalid replication group state`)
+				return fmt.Errorf(`Invalid replication group state`)
 			case elasticache.ErrCodeCacheClusterAlreadyExistsFault:
 				log.Printf(`Cache cluster already exists`)
-				return "", fmt.Errorf(`Cache cluster already exists`)
+				return fmt.Errorf(`Cache cluster already exists`)
 			case elasticache.ErrCodeInsufficientCacheClusterCapacityFault:
 				log.Printf(`Insufficient cache cluster capacity`)
-				return "", fmt.Errorf(`Insufficient cache cluster capacity`)
+				return fmt.Errorf(`Insufficient cache cluster capacity`)
 			case elasticache.ErrCodeCacheSecurityGroupNotFoundFault:
 				log.Printf(`Cache security group not found`)
-				return "", fmt.Errorf(`Cache security group not found`)
+				return fmt.Errorf(`Cache security group not found`)
 			case elasticache.ErrCodeCacheSubnetGroupNotFoundFault:
 				log.Printf(`Subnet group not found`)
-				return "", fmt.Errorf(`Subnet group not found`)
+				return fmt.Errorf(`Subnet group not found`)
 			case elasticache.ErrCodeClusterQuotaForCustomerExceededFault:
 				log.Printf(`Cluster quota for customer exceeded`)
-				return "", fmt.Errorf(`Cluster quota for customer exceeded`)
+				return fmt.Errorf(`Cluster quota for customer exceeded`)
 			case elasticache.ErrCodeNodeQuotaForClusterExceededFault:
 				log.Printf(`Quota for cluster exceeded`)
-				return "", fmt.Errorf(`Quota for cluster exceeded`)
+				return fmt.Errorf(`Quota for cluster exceeded`)
 			case elasticache.ErrCodeNodeQuotaForCustomerExceededFault:
 				log.Printf(`Node quota for customer exceeded`)
-				return "", fmt.Errorf(`Node quota for customer exceeded`)
+				return fmt.Errorf(`Node quota for customer exceeded`)
 			case elasticache.ErrCodeCacheParameterGroupNotFoundFault:
 				log.Printf(`Cache parameter group not found`)
-				return "", fmt.Errorf(`Cache parameter group not found`)
+				return fmt.Errorf(`Cache parameter group not found`)
 			case elasticache.ErrCodeInvalidVPCNetworkStateFault:
 				log.Printf(`Invalid VPC network state`)
-				return "", fmt.Errorf(`Invalid VPC network state`)
+				return fmt.Errorf(`Invalid VPC network state`)
 			case elasticache.ErrCodeTagQuotaPerResourceExceeded:
 				log.Printf(`Tag quota per resource exceeded`)
-				return "", fmt.Errorf(`Tag quota per resource exceeded`)
+				return fmt.Errorf(`Tag quota per resource exceeded`)
 			case elasticache.ErrCodeInvalidParameterValueException:
 				log.Printf(`Invalid parameter value exception`)
-				return "", fmt.Errorf(`Invalid parameter value exception`)
+				return fmt.Errorf(`Invalid parameter value exception`)
 			case elasticache.ErrCodeInvalidParameterCombinationException:
 				log.Printf(`Invalid parameter combination`)
-				return "", fmt.Errorf(`Invalid parameter combination`)
+				return fmt.Errorf(`Invalid parameter combination`)
 			default:
 				fmt.Println(aerr.Error())
 			}
 		}
-		log.Printf(`Error creating Elasticache cluster "%s": %v`, clustername, err)
-		return "", fmt.Errorf(`creating Elasticache cluster "%s": %w`, clustername, err)
+		log.Printf(`Error creating Elasticache cluster "%s": %v`, clusterId, err)
+		return fmt.Errorf(`creating Elasticache cluster "%s": %w`, clusterId, err)
 	}
-	return *result.Location, nil
+	return nil
 }
 
 func (c awsClient) deleteElastiCacheRedis(clusterId string) error {
