@@ -1,0 +1,215 @@
+openapi: 3.0.0
+info:
+  title: Resource Driver
+  description: The API that must be implemented by Resource Drivers
+  version: 0.1.0
+servers:
+  - url: any/with-prefix
+    description: Endpoints can be exposed with prefixes
+paths:
+  /:
+    post:
+      summary: Create or Update a Resource
+
+      requestBody:
+        description: DriverResourceDefinition
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverResourceDefinition'
+      responses:
+        '200':
+          description: New Resorce created, updated or returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceData'
+        '400':
+          description: Unable to create, update or find resource. E.g. unsupported type.
+        '422':
+          description: Malformed ResourceDriverDefinition obejct
+
+  /{resourceId}:
+    parameters:
+      - $ref: '#/components/parameters/resourceId'
+      - name: humanitec-resource-type
+        in: header
+        description: The Type of the resource to be deleted. As passed in the body of POST under `/type`.
+        required: true
+        schema:
+          type: string
+      - name: humanitec-resource-type
+        in: header
+        description: The unencoded resource type. As passed in the body of POST under `/driver_params`
+        required: true
+        schema:
+          type: string
+      - name: humanitec-driver-params
+        in: header
+        description: A base64 encoded JSON of the `driver_params`. As passed in the body of POST under `/driver_params`
+        required: true
+        schema:
+          type: string
+      - name: humanitec-driver-secrets
+        in: header
+        description: A base64 encoded JSON of the `driver_secrets`. As passed in the body of POST under `/driver_secrets`
+        required: true
+        schema:
+          type: string
+    delete:
+      summary: Removes the specified resource, freeing up any actual resource it was using. (e.g. storage)
+      responses:
+        '204':
+          description: Specified Resource removed.
+        '400':
+          description: Resource ID recognised, but sone error occured while perfoming the delete operation.
+        '404':
+          description: Resource ID not recognised.
+
+components:
+  schemas:
+    DriverResourceDefinition:
+      description: >
+        All the information required by the resource driver to provision the requested resource.
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          $ref: '#/components/schemas/ID'
+        type:
+          type: string
+          description: >
+            The type of the resource being requested.
+
+            This allows for multiplexing resource driver services, (E.g. cloudsql driver can support `postgres`, `mysql`
+            and `sqlserver`.)
+          example: postgres
+        resource_params:
+          type: object
+          description: >
+            This contains what is included in an ExternalResource object in a deployment set. (minus the `type` property
+            which is in the parent object.)
+        driver_params:
+          type: object
+          description: >
+            This contains driver-specific parameters, defined in the DynamicResourceDefinition.
+        driver_secrets:
+          type: object
+          description: >
+            This contains driver specific parameters as driver_params, but they should be treated as secret information.
+            For example, they could hold credentials to access oher systems.
+            
+            The credentials for the account associated with he DynamicDefinition that generates the resources is passed
+            in `driver_secrets` as the `account` property. This property is reserved and should not be used by drivers.
+      example:
+        id: 8050895c-b1f1-4976-9ad0-5eddb51da926
+        type: postgres
+        resource_params:
+          extensions:
+            - name: uuid-ossp
+        driver_params:
+          instance: 'my-gcp-project:region:name'
+        driver_secrets:
+          account:
+            "type": "service_account"
+            "project_id": "my-gcp-project"
+            "private_key_id": "269acb6bdbda7f8aed7611827bb261ee"
+            "private_key": "..."
+            "client_email": "my-service-account@my-gcp-project.iam.gserviceaccount.com"
+            "client_id": "2116954827372530238346"
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth"
+            "token_uri": "https://oauth2.googleapis.com/token"
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs"
+            "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/my-service-account@my-gcp-project.iam.gserviceaccount.com"
+          dbcredentials:
+            "username": "postgres"
+            "password": "G75vBJD87rGBCKfBjHQh"  
+
+    ResourceData:
+      description: >
+        All the information required by the deployment job to make the resource available to a module.
+      type: object
+      properties:
+        type:
+          type: string
+          description: One of the supported resource types.
+          example: postgres
+        params:
+          $ref: '#/components/schemas/ValuesSecrets'
+          description: An object that will be used to source placeholder information.
+        driver:
+          type: string
+          description: The driver used at deployment time for this implementation of the resource.
+          example: cloudsql
+        driver_params:
+          $ref: '#/components/schemas/ValuesSecrets'
+          description: >
+            An object that will be passed to the deployment job. Will be used by the deployment job to augment the
+            deployment as required. (e.g. for `cloudsql` it will provide the parameters to configure the
+            cloudsql-proxy.)
+      example:
+        type: postgres
+        data:
+          values:
+            name: db-e615fea0972f6eccb870cfe67e146a8e21f3ee7d
+            host: 127.0.0.1
+            port: 5432
+          secrets:
+            username: 7SsRUZRzeGdk
+            password: RtYybN3SVDM4NdMpJHzAFSmv
+        driver_type: cloudsql
+        driver_data:
+          values:
+            instance: 'my-gcp-project:region:name'
+          secrets:
+            credentialsjson:
+              "type": "service_account"
+              "project_id": "my-gcp-project"
+              "private_key_id": "269acb6bdbda7f8aed7611827bb261ee"
+              "private_key": "..."
+              "client_email": "my-service-account@my-gcp-project.iam.gserviceaccount.com"
+              "client_id": "2116954827372530238346"
+              "auth_uri": "https://accounts.google.com/o/oauth2/auth"
+              "token_uri": "https://oauth2.googleapis.com/token"
+              "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs"
+              "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/my-service-account@my-gcp-project.iam.gserviceaccount.com"
+
+
+
+    ID:
+      type: string
+      pattern: '^[a-z0-9][a-z0-9-]+[a-z0-9]$'
+      description: >
+        IDs in Humanitec must match this regex: `/^[a-z0-9][a-z0-9-]+[a-z0-9]$/`, that is, they must be at least 3
+        characters long, only contain plain lowercase ASCII alphnumeric characters and the `-` symbol. The ID cannot
+        start or end with `-`.
+
+
+
+        IDs must be unique within their class of objects within the organization. For example, there cannot be two
+        environments called `foo` in the same organization. There can be an application called `foo` and an environment
+        also called `foo`.
+
+
+    ValuesSecrets:
+      type: object
+      properties:
+        values:
+          type: object
+          description: 'Parameters which should not be treated as secret. (i.e. can appear in the ConfigMap.)'
+        secrets:
+          type: object
+          description: Parameters which should be treated secret. They will only be exposed via a Kubernetes secret.
+
+  parameters:
+    resourceId:
+      name: resourceId
+      in: path
+      required: true
+      description: The globaly unique ID used to identify the resource to be provisioned.
+      schema:
+        $ref: '#/components/schemas/ID'
+      example: e615fea0972f6eccb870cfe67e146a8e21f3ee7d
