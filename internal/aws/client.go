@@ -18,6 +18,8 @@ import (
 type Client interface {
 	CreateBucket(bucketName string) (string, error)
 	DeleteBucket(bucketName string) error
+	CreateElastiCacheRedis(clusterId string, cacheNodeType string, cacheAz string) error
+	DeleteElastiCacheRedis(clusterId string) error
 }
 
 type awsClient struct {
@@ -154,7 +156,7 @@ func (c awsClient) CreateElastiCacheRedis(clusterId string, cacheNodeType string
 	return nil
 }
 
-func (c awsClient) deleteElastiCacheRedis(clusterId string) error {
+func (c awsClient) DeleteElastiCacheRedis(clusterId string) error {
 	input := &elasticache.DeleteCacheClusterInput{
 		CacheClusterId: aws.String(clusterId),
 	}

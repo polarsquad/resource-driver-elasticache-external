@@ -268,6 +268,8 @@ func TestDeleteAWSResource_Exists(t *testing.T) {
 	header := http.Header{}
 	jsonSecrets, _ := json.Marshal(map[string]interface{}{"account": account})
 	header.Add("Humanitec-Driver-Secrets", base64.StdEncoding.EncodeToString(jsonSecrets))
+	jsonParams, _ := json.Marshal(params)
+	header.Add("Humanitec-Driver-Params", base64.StdEncoding.EncodeToString(jsonParams))
 
 	res := ExecuteRequestHeader(s, http.MethodDelete, "/"+resourceID, nil, header, t)
 
@@ -295,7 +297,9 @@ func TestDeleteAWSResource_DoesNotExist(t *testing.T) {
 		},
 	}
 	resourceID := "test-db-id"
-
+	params := map[string]interface{}{
+		"region": "eu-west-1",
+	}
 	account := AWSCredentials{
 		AccessKeyID:     accessKeyId,
 		SecretAccessKey: secretAccessKey,
@@ -310,6 +314,8 @@ func TestDeleteAWSResource_DoesNotExist(t *testing.T) {
 	header := http.Header{}
 	jsonSecrets, _ := json.Marshal(map[string]interface{}{"account": account})
 	header.Add("Humanitec-Driver-Secrets", base64.StdEncoding.EncodeToString(jsonSecrets))
+	jsonParams, _ := json.Marshal(params)
+	header.Add("Humanitec-Driver-Params", base64.StdEncoding.EncodeToString(jsonParams))
 
 	res := ExecuteRequestHeader(s, http.MethodDelete, "/"+resourceID, nil, header, t)
 

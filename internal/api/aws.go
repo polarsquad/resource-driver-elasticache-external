@@ -108,23 +108,35 @@ func (s *Server) deleteAWSResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Header.Get("Humanitec-Driver-Params") == "" {
+		log.Print(`Missing HTTP header "Humanitec-Driver-Params"`)
+		writeAsJSON(w, http.StatusBadRequest, `Missing HTTP header "Humanitec-Driver-Params"`)
+		return
+	}
+	driverParams, err := DecodeSecretsHeader(r.Header.Get("Humanitec-Driver-Params"))
+	if err != nil {
+		log.Printf(`Unable to decode "Humanitec-Driver-Params" header: %v`, err)
+		writeAsJSON(w, http.StatusBadRequest, `Malformed HTTP header "Humanitec-Driver-Params"`)
+		return
+	}
+
 	if r.Header.Get("Humanitec-Driver-Secrets") == "" {
 		log.Print(`Missing HTTP header "Humanitec-Driver-Secrets"`)
 		writeAsJSON(w, http.StatusBadRequest, `Missing HTTP header "Humanitec-Driver-Secrets"`)
 		return
 	}
-	secrets, err := DecodeSecretsHeader(r.Header.Get("Humanitec-Driver-Secrets"))
+	driverSecrets, err := DecodeSecretsHeader(r.Header.Get("Humanitec-Driver-Secrets"))
 	if err != nil {
 		log.Printf(`Unable to decode "Humanitec-Driver-Secrets" header: %v`, err)
 		writeAsJSON(w, http.StatusBadRequest, `Malformed HTTP header "Humanitec-Driver-Secrets"`)
 		return
 	}
-	if _, exists := secrets["account"]; !exists {
+	if _, exists := driverSecrets["account"]; !exists {
 		log.Print(`Decoded "Humanitec-Driver-Secrets" header is missing "account" key`)
 		writeAsJSON(w, http.StatusBadRequest, `Decoded "Humanitec-Driver-Secrets" header is missing "account" key`)
 		return
 	}
-	awsCreds, err := AccountMapToAWSCredentials(secrets["account"])
+	awsCreds, err := AccountMapToAWSCredentials(driverSecrets["account"])
 	metadata, metadataExists, err := s.Model.SelectResourceMetadata(params["resourceId"])
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -143,7 +155,7 @@ func (s *Server) deleteAWSResource(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "redis":
-		err = s.deleteS3Bucket(metadata.Data["bucket"].(string), metadata.Params["region"].(string), awsCreds)
+		err = s.deleteRedis(metadata.Data["host"].(string), driverParams, driverSecrets, awsCreds)
 		if err != nil {
 			log.Printf(`Error deleting bucket "%s": %v`, metadata.Data["bucket"], err)
 			writeAsJSON(w, http.StatusBadRequest, fmt.Sprintf(`Error deleting bucket "%s": %v`, metadata.Data["bucket"], err))

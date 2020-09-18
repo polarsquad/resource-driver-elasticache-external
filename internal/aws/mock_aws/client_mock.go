@@ -47,6 +47,20 @@ func (mr *MockClientMockRecorder) CreateBucket(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBucket", reflect.TypeOf((*MockClient)(nil).CreateBucket), arg0)
 }
 
+// CreateElastiCacheRedis mocks base method
+func (m *MockClient) CreateElastiCacheRedis(arg0, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateElastiCacheRedis", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateElastiCacheRedis indicates an expected call of CreateElastiCacheRedis
+func (mr *MockClientMockRecorder) CreateElastiCacheRedis(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateElastiCacheRedis", reflect.TypeOf((*MockClient)(nil).CreateElastiCacheRedis), arg0, arg1, arg2)
+}
+
 // DeleteBucket mocks base method
 func (m *MockClient) DeleteBucket(arg0 string) error {
 	m.ctrl.T.Helper()
@@ -59,4 +73,18 @@ func (m *MockClient) DeleteBucket(arg0 string) error {
 func (mr *MockClientMockRecorder) DeleteBucket(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBucket", reflect.TypeOf((*MockClient)(nil).DeleteBucket), arg0)
+}
+
+// DeleteElastiCacheRedis mocks base method
+func (m *MockClient) DeleteElastiCacheRedis(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteElastiCacheRedis", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteElastiCacheRedis indicates an expected call of DeleteElastiCacheRedis
+func (mr *MockClientMockRecorder) DeleteElastiCacheRedis(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteElastiCacheRedis", reflect.TypeOf((*MockClient)(nil).DeleteElastiCacheRedis), arg0)
 }

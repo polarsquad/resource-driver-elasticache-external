@@ -38,7 +38,9 @@ func TestCreateRedis(t *testing.T) {
 		Type:           "redis",
 		ResourceParams: map[string]interface{}{},
 		DriverParams: map[string]interface{}{
-			"region": region,
+			"region":                  region,
+			"cache_node_type":         "cache-node-type",
+			"cache_availability_zone": "my-zone",
 		},
 		DriverSecrets: map[string]interface{}{
 			"account": map[string]interface{}{
@@ -52,6 +54,16 @@ func TestCreateRedis(t *testing.T) {
 		Secrets: map[string]interface{}{},
 	}
 	awsCreds, _ := AccountMapToAWSCredentials(drd.DriverSecrets["account"])
+
+	a.
+		EXPECT().
+		CreateElastiCacheRedis(gomock.AssignableToTypeOf(""), drd.DriverParams["cache_node_type"], drd.DriverParams["cache_availability_zone"]).
+		Do(func(id, cnt, caz interface{}) {
+			expectedData.Values["host"] = id.(string)
+		}).
+		Return(nil).
+		Times(1)
+
 	responseData, err := s.createRedis(drd, awsCreds)
 
 	is.NoErr(err)
@@ -80,7 +92,9 @@ func TestDeleteRedis(t *testing.T) {
 	}
 	elastiCacheID := "elastic-cache-id"
 	driverParams := map[string]interface{}{
-		"region": region,
+		"region":                  region,
+		"cache_node_type":         "cache-node-type",
+		"cache_availability_zone": "my-zone",
 	}
 	driverSecrets := map[string]interface{}{
 		"account": map[string]interface{}{
@@ -88,7 +102,15 @@ func TestDeleteRedis(t *testing.T) {
 			"aws_secret_access_key": secretAccessKey,
 		},
 	}
-	err := s.deleteRedis(elastiCacheID, driverParams, driverSecrets)
+
+	awsCreds, _ := AccountMapToAWSCredentials(driverSecrets["account"])
+	a.
+		EXPECT().
+		DeleteElastiCacheRedis(elastiCacheID).
+		Return(nil).
+		Times(1)
+
+	err := s.deleteRedis(elastiCacheID, driverParams, driverSecrets, awsCreds)
 
 	is.NoErr(err)
 }
