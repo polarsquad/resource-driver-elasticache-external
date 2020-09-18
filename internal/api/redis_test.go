@@ -50,7 +50,9 @@ func TestCreateRedis(t *testing.T) {
 		},
 	}
 	expectedData := messages.ValuesSecrets{
-		Values:  map[string]interface{}{},
+		Values: map[string]interface{}{
+			"port": 6379,
+		},
 		Secrets: map[string]interface{}{},
 	}
 	awsCreds, _ := AccountMapToAWSCredentials(drd.DriverSecrets["account"])

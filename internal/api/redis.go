@@ -50,6 +50,7 @@ func (s *Server) createRedis(drd messages.DriverResourceDefinition, awsCreds AWS
 	return messages.ValuesSecrets{
 		Values: map[string]interface{}{
 			"host": clusterId,
+			"port": 6379,
 		},
 		Secrets: map[string]interface{}{},
 	}, nil
