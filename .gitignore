@@ -1,0 +1,4 @@
+node_modules/
+*_mock.go
+account.json
+dbcredentials.json

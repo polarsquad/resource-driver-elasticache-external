@@ -12,7 +12,7 @@ import (
 	"github.com/matryer/is"
 )
 
-func TestCreateS3Bucket(t *testing.T) {
+func TestCreateRedis(t *testing.T) {
 	is := is.New(t)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -35,7 +35,7 @@ func TestCreateS3Bucket(t *testing.T) {
 
 	drd := messages.DriverResourceDefinition{
 		ID:             "resource-id",
-		Type:           "s3",
+		Type:           "redis",
 		ResourceParams: map[string]interface{}{},
 		DriverParams: map[string]interface{}{
 			"region": region,
@@ -48,24 +48,47 @@ func TestCreateS3Bucket(t *testing.T) {
 		},
 	}
 	expectedData := messages.ValuesSecrets{
-		Values: map[string]interface{}{
-			"region": region,
-		},
+		Values:  map[string]interface{}{},
 		Secrets: map[string]interface{}{},
 	}
 	awsCreds, _ := AccountMapToAWSCredentials(drd.DriverSecrets["account"])
-
-	a.
-		EXPECT().
-		CreateBucket(gomock.AssignableToTypeOf("")).
-		Do(func(bn interface{}) {
-			expectedData.Values["bucket"] = bn.(string)
-		}).
-		Return(region, nil).
-		Times(1)
-
-	responseData, err := s.createS3Bucket(drd, awsCreds)
+	responseData, err := s.createRedis(drd, awsCreds)
 
 	is.NoErr(err)
 	is.Equal(expectedData, responseData)
+}
+
+func TestDeleteRedis(t *testing.T) {
+	is := is.New(t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	accessKeyId := "AWS_ACCESS_KEY_ID-value"
+	secretAccessKey := "AWS_SECRET_ACCESS_KEY-value"
+	region := "eu-west-1"
+
+	m := mock_model.NewMockModeler(ctrl)
+	a := mock_aws.NewMockClient(ctrl)
+	s := Server{
+		Model: m,
+		NewAwsClient: func(key, secret, reg string) (aws.Client, error) {
+			is.Equal(key, accessKeyId)
+			is.Equal(secret, secretAccessKey)
+			is.Equal(reg, region)
+			return a, nil
+		},
+	}
+	elastiCacheID := "elastic-cache-id"
+	driverParams := map[string]interface{}{
+		"region": region,
+	}
+	driverSecrets := map[string]interface{}{
+		"account": map[string]interface{}{
+			"aws_access_key_id":     accessKeyId,
+			"aws_secret_access_key": secretAccessKey,
+		},
+	}
+	err := s.deleteRedis(elastiCacheID, driverParams, driverSecrets)
+
+	is.NoErr(err)
 }

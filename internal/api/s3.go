@@ -8,18 +8,13 @@ import (
 	"humanitec.io/resources/driver-aws-external/internal/messages"
 )
 
-func (s *Server) createS3Bucket(drd messages.DriverResourceDefinition) (messages.ValuesSecrets, error) {
+func (s *Server) createS3Bucket(drd messages.DriverResourceDefinition, awsCreds AWSCredentials) (messages.ValuesSecrets, error) {
 
-	if _, exists := drd.DriverSecrets["account"]; !exists {
-		log.Println(`"account" property in driver_secrets is missing`)
-		return messages.ValuesSecrets{}, fmt.Errorf(`"account" property in driver_secrets is missing: create s3 bucket`)
-	}
-
-	account, ok := drd.DriverSecrets["account"].(map[string]interface{})
-	if !ok {
-		log.Printf(`"account" property in driver_secrets is not an object. Got: %T`, drd.DriverSecrets["account"])
-		log.Printf(`value of driver_secrets.account: %#v`, drd.DriverSecrets["account"])
-		return messages.ValuesSecrets{}, fmt.Errorf(`"account" property in driver_secrets is not an obeject: create s3 bucket`)
+	var region string
+	var ok bool
+	if region, ok = drd.DriverParams["region"].(string); !ok {
+		log.Printf(`"region" property in driver_params: Expected string, Got: %T`, drd.DriverParams["region"])
+		return messages.ValuesSecrets{}, fmt.Errorf(`"region" property in driver_params: expected string, got %T`, drd.DriverParams["region"])
 	}
 
 	bucketNameUUID, err := uuid.NewRandom()
@@ -28,11 +23,8 @@ func (s *Server) createS3Bucket(drd messages.DriverResourceDefinition) (messages
 		return messages.ValuesSecrets{}, fmt.Errorf("create s3 bucket, generating name: %w", err)
 	}
 	bucketName := bucketNameUUID.String()
-	accessKeyId := account["aws_access_key_id"].(string)
-	secretAccessKey := account["aws_secret_access_key"].(string)
-	region := drd.DriverParams["region"].(string)
 
-	client, err := s.NewAwsClient(accessKeyId, secretAccessKey, region)
+	client, err := s.NewAwsClient(awsCreds.AccessKeyID, awsCreds.SecretAccessKey, region)
 	if err != nil {
 		return messages.ValuesSecrets{}, err
 	}

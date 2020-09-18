@@ -51,9 +51,22 @@ func (s *Server) createOrUpdateAWSResource(w http.ResponseWriter, r *http.Reques
 		metadata.CreatedAt = time.Now().UTC()
 		metadata.Params = drd.DriverParams
 
+		if _, exists := drd.DriverSecrets["account"]; !exists {
+			log.Println(`"account" property in driver_secrets is missing`)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		awsCreds, err := AccountMapToAWSCredentials(drd.DriverSecrets["account"])
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		switch drd.Type {
 		case "s3":
-			data, err = s.createS3Bucket(drd)
+			data, err = s.createS3Bucket(drd, awsCreds)
+		case "redis":
+			data, err = s.createRedis(drd, awsCreds)
 		default:
 			log.Printf(`Type "%s" not supported by this driver.`, metadata.Type)
 			writeAsJSON(w, http.StatusBadRequest, fmt.Sprintf(`Type "%s" not supported by this driver.`, metadata.Type))
@@ -64,7 +77,7 @@ func (s *Server) createOrUpdateAWSResource(w http.ResponseWriter, r *http.Reques
 			return
 		}
 		metadata.Data = data.Values
-		err := s.Model.InsertOrUpdateResourceMetadata(metadata)
+		err = s.Model.InsertOrUpdateResourceMetadata(metadata)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -123,6 +136,13 @@ func (s *Server) deleteAWSResource(w http.ResponseWriter, r *http.Request) {
 	}
 	switch metadata.Type {
 	case "s3":
+		err = s.deleteS3Bucket(metadata.Data["bucket"].(string), metadata.Params["region"].(string), awsCreds)
+		if err != nil {
+			log.Printf(`Error deleting bucket "%s": %v`, metadata.Data["bucket"], err)
+			writeAsJSON(w, http.StatusBadRequest, fmt.Sprintf(`Error deleting bucket "%s": %v`, metadata.Data["bucket"], err))
+			return
+		}
+	case "redis":
 		err = s.deleteS3Bucket(metadata.Data["bucket"].(string), metadata.Params["region"].(string), awsCreds)
 		if err != nil {
 			log.Printf(`Error deleting bucket "%s": %v`, metadata.Data["bucket"], err)
