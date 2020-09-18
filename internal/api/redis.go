@@ -19,6 +19,7 @@ func (s *Server) createRedis(drd messages.DriverResourceDefinition, awsCreds AWS
 
 	client, err := s.NewAwsClient(awsCreds.AccessKeyID, awsCreds.SecretAccessKey, region, s.TimeoutLimit)
 	if err != nil {
+		log.Printf("Unable to create AWS client: %v", err)
 		return messages.ValuesSecrets{}, err
 	}
 

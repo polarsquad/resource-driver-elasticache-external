@@ -46,6 +46,7 @@ func (s *Server) createOrUpdateAWSResource(w http.ResponseWriter, r *http.Reques
 
 	awsCreds, err := AccountMapToAWSCredentials(drd.DriverSecrets["account"])
 	if err != nil {
+		log.Printf("Reading account: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -82,6 +83,7 @@ func (s *Server) createOrUpdateAWSResource(w http.ResponseWriter, r *http.Reques
 			return
 		}
 		if err != nil {
+			log.Printf("Handling type %s failed: %v", drd.Type, err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
