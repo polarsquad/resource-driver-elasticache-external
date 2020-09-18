@@ -43,8 +43,22 @@ func (s *Server) createOrUpdateAWSResource(w http.ResponseWriter, r *http.Reques
 		Values:  map[string]interface{}{},
 		Secrets: map[string]interface{}{},
 	}
+
+	awsCreds, err := AccountMapToAWSCredentials(drd.DriverSecrets["account"])
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	if metadataExists {
 		data.Values = metadata.Data
+		switch drd.Type {
+		case "s3":
+			data.Secrets = map[string]interface{}{
+				"aws_access_key_id":     awsCreds.AccessKeyID,
+				"aws_secret_access_key": awsCreds.SecretAccessKey,
+			}
+		}
 	} else {
 		metadata.ID = drd.ID
 		metadata.Type = drd.Type
@@ -53,11 +67,6 @@ func (s *Server) createOrUpdateAWSResource(w http.ResponseWriter, r *http.Reques
 
 		if _, exists := drd.DriverSecrets["account"]; !exists {
 			log.Println(`"account" property in driver_secrets is missing`)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		awsCreds, err := AccountMapToAWSCredentials(drd.DriverSecrets["account"])
-		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -83,15 +92,6 @@ func (s *Server) createOrUpdateAWSResource(w http.ResponseWriter, r *http.Reques
 			return
 		}
 	}
-	awsCreds, err := AccountMapToAWSCredentials(drd.DriverSecrets["account"])
-	if err != nil {
-		log.Printf("Unable to read account as AWS credentials: %v", err)
-		writeAsJSON(w, http.StatusBadRequest, "Unable to read account as AWS credentials")
-		return
-	}
-	data.Secrets["aws_access_key_id"] = awsCreds.AccessKeyID
-	data.Secrets["aws_secret_access_key"] = awsCreds.SecretAccessKey
-
 	writeAsJSON(w, http.StatusOK, messages.ResourceData{
 		Type:       metadata.Type,
 		Data:       data,

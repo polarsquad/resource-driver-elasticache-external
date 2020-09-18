@@ -39,6 +39,7 @@ func main() {
 			log.Fatalf(`Unable to set timeout limit to "%s"`, os.Getenv("TIMEOUT_LIMIT"))
 		}
 	}
+	log.Printf("Timeout set to %d", s.TimeoutLimit)
 
 	s.ServingPort = os.Getenv("PORT")
 	if s.ServingPort == "" {

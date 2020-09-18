@@ -51,7 +51,10 @@ func TestCreateS3Bucket(t *testing.T) {
 		Values: map[string]interface{}{
 			"region": region,
 		},
-		Secrets: map[string]interface{}{},
+		Secrets: map[string]interface{}{
+			"aws_access_key_id":     accessKeyId,
+			"aws_secret_access_key": secretAccessKey,
+		},
 	}
 	awsCreds, _ := AccountMapToAWSCredentials(drd.DriverSecrets["account"])
 

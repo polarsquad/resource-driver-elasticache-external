@@ -28,7 +28,7 @@ func (s *Server) createRedis(drd messages.DriverResourceDefinition, awsCreds AWS
 		log.Println("Unable to generate random UUID.")
 		return messages.ValuesSecrets{}, fmt.Errorf("create s3 bucket, generating name: %w", err)
 	}
-	clusterId := clusterUUID.String()
+	clusterId := "redis-" + clusterUUID.String()
 
 	var cacheNodeType string
 	if cacheNodeType, ok = drd.DriverParams["cache_node_type"].(string); !ok {
@@ -37,14 +37,16 @@ func (s *Server) createRedis(drd messages.DriverResourceDefinition, awsCreds AWS
 	}
 
 	var cacheAz string
-	if cacheAz, ok = drd.DriverParams["cache_availability_zone"].(string); !ok {
-		log.Printf(`"cache_availability_zone" property in driver_params: Expected string, Got: %T`, drd.DriverParams["cache_availability_zone"])
-		return messages.ValuesSecrets{}, fmt.Errorf(`"cache_availability_zone" property in driver_params: expected string, got %T`, drd.DriverParams["cache_availability_zone"])
+	if cacheAz, ok = drd.DriverParams["cache_az"].(string); !ok {
+		log.Printf(`"cache_az" property in driver_params: Expected string, Got: %T`, drd.DriverParams["cache_az"])
+		return messages.ValuesSecrets{}, fmt.Errorf(`"cache_az" property in driver_params: expected string, got %T`, drd.DriverParams["cache_az"])
 	}
 
+	log.Printf(`client.CreateElastiCacheRedis("%s", "%s", "%s)`, clusterId, cacheNodeType, cacheAz)
 	endpoint, err := client.CreateElastiCacheRedis(clusterId, cacheNodeType, cacheAz)
 
 	if err != nil {
+		log.Printf(`client.CreateElastiCacheRedis("%s", "%s", "%s) returned error: %v`, clusterId, cacheNodeType, cacheAz, err)
 		return messages.ValuesSecrets{}, err
 	}
 	return messages.ValuesSecrets{

@@ -40,8 +40,9 @@ func New(accessKeyId, secretAccessKey, region string, timeoutLimit int) (Client,
 		return nil, fmt.Errorf(`creating aws session: %w`, err)
 	}
 	return awsClient{
-		sess:   sess,
-		region: region,
+		sess:         sess,
+		region:       region,
+		timeoutLimit: timeoutLimit,
 	}, nil
 }
 
@@ -155,6 +156,7 @@ func (c awsClient) CreateElastiCacheRedis(clusterId string, cacheNodeType string
 		log.Printf(`Error creating Elasticache cluster "%s": %v`, clusterId, err)
 		return "", fmt.Errorf(`creating Elasticache cluster "%s": %w`, clusterId, err)
 	}
+	log.Printf("Cluster %s created. Retrieving Hostname.", clusterId)
 	dcci := &elasticache.DescribeCacheClustersInput{
 		CacheClusterId:    aws.String(clusterId),
 		ShowCacheNodeInfo: aws.Bool(true),
@@ -165,21 +167,44 @@ func (c awsClient) CreateElastiCacheRedis(clusterId string, cacheNodeType string
 	var dcco *elasticache.DescribeCacheClustersOutput
 	for !available {
 		time.Sleep(10 * time.Second)
-		timeoutCount--
-
-		dcco, err := svc.DescribeCacheClusters(dcci)
+		timeoutCount = timeoutCount - 1
+		var err error
+		log.Printf(`Calling svc.DescribeCacheClusters({CacheClusterId: "%s", ShowCacheNodeInfo: true})`, clusterId)
+		dcco, err = svc.DescribeCacheClusters(dcci)
 		if err != nil {
 			log.Printf(`Error describing Elasticache cluster "%s": %v`, clusterId, err)
 			return "", fmt.Errorf(`describing Elasticache cluster "%s": %w`, clusterId, err)
 		}
 		if len(dcco.CacheClusters) > 0 {
-			available = *(dcco.CacheClusters[0].CacheClusterStatus) == "available"
+			if *(dcco.CacheClusters[0].CacheClusterStatus) == "available" {
+				if len(dcco.CacheClusters[0].CacheNodes) > 0 {
+					log.Printf("len(dcco.CacheClusters[0].CacheNodes) = %d", len(dcco.CacheClusters[0].CacheNodes))
+					if *(dcco.CacheClusters[0].CacheNodes[0].CacheNodeStatus) == "available" {
+						fmt.Printf("*(dcco.CacheClusters[0].CacheNodes[0].CacheNodeStatus) = %s", *(dcco.CacheClusters[0].CacheNodes[0].CacheNodeStatus))
+						if dcco.CacheClusters[0].CacheNodes[0].Endpoint != nil {
+							fmt.Printf("dcco.CacheClusters[0].CacheNodes[0].Endpoint = %T", dcco.CacheClusters[0].CacheNodes[0].Endpoint)
+							if dcco.CacheClusters[0].CacheNodes[0].Endpoint.Address != nil {
+								fmt.Printf("dcco.CacheClusters[0].CacheNodes[0].Endpoint.Address = %s", *(dcco.CacheClusters[0].CacheNodes[0].Endpoint.Address))
+								available = true
+							} else {
+								log.Printf("dcco.CacheClusters[0].CacheNodes[0].Endpoint.Address == nil")
+							}
+						} else {
+							log.Printf("dcco.CacheClusters[0].CacheNodes[0].Endpoint == nil")
+						}
+					} else {
+						log.Printf("dcco.CacheClusters[0].CacheNodes[0].CacheNodeStatus != available")
+					}
+				} else {
+					log.Printf("len(dcco.CacheClusters[0].CacheNodes) == 0")
+				}
+			}
 		}
 		if timeoutCount <= 0 {
 			return "", fmt.Errorf(`fetching endpoint failed. cluster "%s" not available after %d seconds: %w`, clusterId, c.timeoutLimit, err)
 		}
 	}
-
+	log.Printf("Endpoint retrieved: Address: %s", *(dcco.CacheClusters[0].CacheNodes[0].Endpoint.Address))
 	return *(dcco.CacheClusters[0].CacheNodes[0].Endpoint.Address), nil
 }
 

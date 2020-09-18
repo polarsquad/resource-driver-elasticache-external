@@ -39,7 +39,10 @@ func (s *Server) createS3Bucket(drd messages.DriverResourceDefinition, awsCreds 
 			"region": generatedRegion,
 			"bucket": bucketName,
 		},
-		Secrets: map[string]interface{}{},
+		Secrets: map[string]interface{}{
+			"aws_access_key_id":     awsCreds.AccessKeyID,
+			"aws_secret_access_key": awsCreds.SecretAccessKey,
+		},
 	}, nil
 }
 

@@ -38,9 +38,9 @@ func TestCreateRedis(t *testing.T) {
 		Type:           "redis",
 		ResourceParams: map[string]interface{}{},
 		DriverParams: map[string]interface{}{
-			"region":                  region,
-			"cache_node_type":         "cache-node-type",
-			"cache_availability_zone": "my-zone",
+			"region":          region,
+			"cache_node_type": "cache-node-type",
+			"cache_az":        "my-zone",
 		},
 		DriverSecrets: map[string]interface{}{
 			"account": map[string]interface{}{
@@ -61,7 +61,7 @@ func TestCreateRedis(t *testing.T) {
 
 	a.
 		EXPECT().
-		CreateElastiCacheRedis(gomock.AssignableToTypeOf(""), drd.DriverParams["cache_node_type"], drd.DriverParams["cache_availability_zone"]).
+		CreateElastiCacheRedis(gomock.AssignableToTypeOf(""), drd.DriverParams["cache_node_type"], drd.DriverParams["cache_az"]).
 		Return(redisHost, nil).
 		Times(1)
 
