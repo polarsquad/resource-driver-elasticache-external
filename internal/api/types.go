@@ -14,7 +14,8 @@ type Server struct {
 	Router       http.Handler
 	ServingPort  string
 	HttpClient   doer.Doer
-	NewAwsClient func(string, string, string) (aws.Client, error)
+	NewAwsClient func(string, string, string, int) (aws.Client, error)
+	TimeoutLimit int
 }
 
 type AWSCredentials struct {

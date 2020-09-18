@@ -48,11 +48,12 @@ func (mr *MockClientMockRecorder) CreateBucket(arg0 interface{}) *gomock.Call {
 }
 
 // CreateElastiCacheRedis mocks base method
-func (m *MockClient) CreateElastiCacheRedis(arg0, arg1, arg2 string) error {
+func (m *MockClient) CreateElastiCacheRedis(arg0, arg1, arg2 string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateElastiCacheRedis", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // CreateElastiCacheRedis indicates an expected call of CreateElastiCacheRedis

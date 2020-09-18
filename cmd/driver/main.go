@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/handlers"
@@ -29,6 +30,14 @@ func main() {
 	s.NewAwsClient = aws.New
 	if os.Getenv("USE_FAKE_AWS_CLIENT") != "" {
 		s.NewAwsClient = aws.FakeNew
+	}
+	var err error
+	s.TimeoutLimit = 300
+	if os.Getenv("TIMEOUT_LIMIT") != "" {
+		s.TimeoutLimit, err = strconv.Atoi(os.Getenv("TIMEOUT_LIMIT"))
+		if err != nil || s.TimeoutLimit <= 0 {
+			log.Fatalf(`Unable to set timeout limit to "%s"`, os.Getenv("TIMEOUT_LIMIT"))
+		}
 	}
 
 	s.ServingPort = os.Getenv("PORT")

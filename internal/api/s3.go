@@ -24,7 +24,7 @@ func (s *Server) createS3Bucket(drd messages.DriverResourceDefinition, awsCreds 
 	}
 	bucketName := bucketNameUUID.String()
 
-	client, err := s.NewAwsClient(awsCreds.AccessKeyID, awsCreds.SecretAccessKey, region)
+	client, err := s.NewAwsClient(awsCreds.AccessKeyID, awsCreds.SecretAccessKey, region, s.TimeoutLimit)
 	if err != nil {
 		return messages.ValuesSecrets{}, err
 	}
@@ -45,7 +45,7 @@ func (s *Server) createS3Bucket(drd messages.DriverResourceDefinition, awsCreds 
 
 func (s *Server) deleteS3Bucket(bucketName, region string, awsCreds AWSCredentials) error {
 
-	client, err := s.NewAwsClient(awsCreds.AccessKeyID, awsCreds.SecretAccessKey, region)
+	client, err := s.NewAwsClient(awsCreds.AccessKeyID, awsCreds.SecretAccessKey, region, s.TimeoutLimit)
 	if err != nil {
 		return err
 	}

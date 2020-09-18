@@ -25,7 +25,7 @@ func TestCreateS3Bucket(t *testing.T) {
 	a := mock_aws.NewMockClient(ctrl)
 	s := Server{
 		Model: m,
-		NewAwsClient: func(key, secret, reg string) (aws.Client, error) {
+		NewAwsClient: func(key, secret, reg string, timeout int) (aws.Client, error) {
 			is.Equal(key, accessKeyId)
 			is.Equal(secret, secretAccessKey)
 			is.Equal(reg, region)

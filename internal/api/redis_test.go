@@ -25,7 +25,7 @@ func TestCreateRedis(t *testing.T) {
 	a := mock_aws.NewMockClient(ctrl)
 	s := Server{
 		Model: m,
-		NewAwsClient: func(key, secret, reg string) (aws.Client, error) {
+		NewAwsClient: func(key, secret, reg string, timeoutLimit int) (aws.Client, error) {
 			is.Equal(key, accessKeyId)
 			is.Equal(secret, secretAccessKey)
 			is.Equal(reg, region)
@@ -49,8 +49,10 @@ func TestCreateRedis(t *testing.T) {
 			},
 		},
 	}
+	redisHost := "redis-host"
 	expectedData := messages.ValuesSecrets{
 		Values: map[string]interface{}{
+			"host": redisHost,
 			"port": 6379,
 		},
 		Secrets: map[string]interface{}{},
@@ -60,10 +62,7 @@ func TestCreateRedis(t *testing.T) {
 	a.
 		EXPECT().
 		CreateElastiCacheRedis(gomock.AssignableToTypeOf(""), drd.DriverParams["cache_node_type"], drd.DriverParams["cache_availability_zone"]).
-		Do(func(id, cnt, caz interface{}) {
-			expectedData.Values["host"] = id.(string)
-		}).
-		Return(nil).
+		Return(redisHost, nil).
 		Times(1)
 
 	responseData, err := s.createRedis(drd, awsCreds)
@@ -85,7 +84,7 @@ func TestDeleteRedis(t *testing.T) {
 	a := mock_aws.NewMockClient(ctrl)
 	s := Server{
 		Model: m,
-		NewAwsClient: func(key, secret, reg string) (aws.Client, error) {
+		NewAwsClient: func(key, secret, reg string, timeoutLimit int) (aws.Client, error) {
 			is.Equal(key, accessKeyId)
 			is.Equal(secret, secretAccessKey)
 			is.Equal(reg, region)

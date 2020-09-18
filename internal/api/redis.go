@@ -17,7 +17,7 @@ func (s *Server) createRedis(drd messages.DriverResourceDefinition, awsCreds AWS
 		return messages.ValuesSecrets{}, fmt.Errorf(`"region" property in driver_params: expected string, got %T`, drd.DriverParams["region"])
 	}
 
-	client, err := s.NewAwsClient(awsCreds.AccessKeyID, awsCreds.SecretAccessKey, region)
+	client, err := s.NewAwsClient(awsCreds.AccessKeyID, awsCreds.SecretAccessKey, region, s.TimeoutLimit)
 	if err != nil {
 		return messages.ValuesSecrets{}, err
 	}
@@ -42,14 +42,14 @@ func (s *Server) createRedis(drd messages.DriverResourceDefinition, awsCreds AWS
 		return messages.ValuesSecrets{}, fmt.Errorf(`"cache_availability_zone" property in driver_params: expected string, got %T`, drd.DriverParams["cache_availability_zone"])
 	}
 
-	err = client.CreateElastiCacheRedis(clusterId, cacheNodeType, cacheAz)
+	endpoint, err := client.CreateElastiCacheRedis(clusterId, cacheNodeType, cacheAz)
 
 	if err != nil {
 		return messages.ValuesSecrets{}, err
 	}
 	return messages.ValuesSecrets{
 		Values: map[string]interface{}{
-			"host": clusterId,
+			"host": endpoint,
 			"port": 6379,
 		},
 		Secrets: map[string]interface{}{},
@@ -65,7 +65,7 @@ func (s *Server) deleteRedis(id string, driverParams, driverSecrets map[string]i
 		return fmt.Errorf(`"region" property in driver_params: expected string, got %T`, driverParams["region"])
 	}
 
-	client, err := s.NewAwsClient(awsCreds.AccessKeyID, awsCreds.SecretAccessKey, region)
+	client, err := s.NewAwsClient(awsCreds.AccessKeyID, awsCreds.SecretAccessKey, region, s.TimeoutLimit)
 	if err != nil {
 		return err
 	}
